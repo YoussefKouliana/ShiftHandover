@@ -33,4 +33,36 @@ public static class SwedishLabels
         IssueCategory.Other => "Övrigt",
         _ => category.ToString()
     };
+        public static string ToSwedish(this Shift shift) => shift switch
+    {
+        Shift.Day => "Dag",
+        Shift.Evening => "Kväll",
+        Shift.Night => "Natt",
+        _ => shift.ToString()
+    };
+
+    public static string ToSwedish(this MachineStatus status) => status switch
+    {
+        MachineStatus.Running => "Kör",
+        MachineStatus.Stopped => "Stoppad",
+        MachineStatus.Service => "Service",
+        _ => status.ToString()
+    };
+
+    public static string ToSwedish(this ToolStatus status) => status switch
+    {
+        ToolStatus.Ok => "OK",
+        ToolStatus.Worn => "Slitage",
+        ToolStatus.Damaged => "Skadat",
+        ToolStatus.NeedsChange => "Byte behövs",
+        _ => status.ToString()
+    };
+
+    public static string ToSwedish(this QualityStatus status) => status switch
+    {
+        QualityStatus.Approved => "Godkänt",
+        QualityStatus.CheckRequested => "Kontroll begärd",
+        QualityStatus.Blocked => "Spärrat",
+        _ => status.ToString()
+    };
 }

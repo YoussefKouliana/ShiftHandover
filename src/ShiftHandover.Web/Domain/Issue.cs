@@ -14,6 +14,9 @@ public class Issue
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedUtc { get; private set; }
     public List<StatusChange> History { get; } = new();
+        // Optional: which tool the issue concerns
+    public int? ToolId { get; set; }
+    public Tool? Tool { get; set; }
 
     public bool IsClosed => Status == IssueStatus.Verified;
 

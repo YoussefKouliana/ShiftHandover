@@ -26,3 +26,32 @@ public enum IssueCategory
     MachineFault,
     Other
 }
+
+public enum Shift
+{
+    Day,
+    Evening,
+    Night
+}
+
+public enum MachineStatus
+{
+    Running,
+    Stopped,
+    Service
+}
+
+public enum ToolStatus
+{
+    Ok,
+    Worn,
+    Damaged,
+    NeedsChange
+}
+
+public enum QualityStatus
+{
+    Approved,
+    CheckRequested,
+    Blocked
+}
