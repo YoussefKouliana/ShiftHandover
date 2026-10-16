@@ -1,0 +1,60 @@
+.week-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.week-header h1 {
+    margin: 0;
+    font-size: 1.6rem;
+}
+
+.day {
+    margin-bottom: 2rem;
+}
+
+.day h2 {
+    font-size: 1.25rem;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 0.25rem;
+}
+
+.day h3 {
+    font-size: 1rem;
+    margin: 1rem 0 0.4rem;
+    color: #495057;
+}
+
+.status {
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.status.ok {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.status.warn {
+    background: #fff3cd;
+    color: #664d03;
+}
+
+.status.bad {
+    background: #f8d7da;
+    color: #842029;
+}
+
+.missing {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.comment {
+    font-size: 0.85rem;
+    color: #495057;
+}

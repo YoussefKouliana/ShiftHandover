@@ -33,11 +33,11 @@ public static class SwedishLabels
         IssueCategory.Other => "Övrigt",
         _ => category.ToString()
     };
-        public static string ToSwedish(this Shift shift) => shift switch
+      public static string ToSwedish(this Shift shift) => shift switch
     {
-        Shift.Day => "Dag",
-        Shift.Evening => "Kväll",
-        Shift.Night => "Natt",
+        Shift.Day => "Morgonskift",
+        Shift.Evening => "Kvällsskift",
+        Shift.Night => "Nattskift",
         _ => shift.ToString()
     };
 

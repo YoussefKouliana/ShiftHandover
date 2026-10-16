@@ -1,0 +1,130 @@
+@page "/vecka"
+@using ShiftHandover.Web.Domain
+@using ShiftHandover.Web.Services
+@inject ShiftReportService Reports
+
+<PageTitle>Veckoöversikt</PageTitle>
+
+<div class="week-header">
+    <button class="btn btn-outline-secondary" @onclick="PreviousWeek">← Föregående</button>
+    <h1>Vecka @WeekHelper.WeekNumber(weekStart)</h1>
+    <button class="btn btn-outline-secondary" @onclick="NextWeek">Nästa →</button>
+    <button class="btn btn-link" @onclick="ThisWeek">Denna vecka</button>
+</div>
+
+@if (rows is null || machines is null)
+{
+    <p>Laddar...</p>
+}
+else
+{
+    @foreach (var day in WeekHelper.Workdays(weekStart))
+    {
+        <section class="day">
+            <h2>@WeekHelper.SwedishDayName(day)</h2>
+
+            @foreach (var shift in Enum.GetValues<Shift>())
+            {
+                <h3>@shift.ToSwedish()</h3>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Maskin</th>
+                                <th>Verktyg</th>
+                                <th>Detalj</th>
+                                <th>Maskinstatus</th>
+                                <th>Verktygsstatus</th>
+                                <th>Kvalitetsstatus</th>
+                                <th>Operatör</th>
+                                <th>Kommentar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var machine in machines)
+                            {
+                                var row = Find(day, shift, machine.Id);
+                                <tr>
+                                    <td><strong>@machine.Name</strong></td>
+                                    @if (row is null)
+                                    {
+                                        <td colspan="7" class="missing">Ej rapporterad</td>
+                                    }
+                                    else
+                                    {
+                                        <td>@row.ToolText</td>
+                                        <td>@row.PartText</td>
+                                        <td><span class="status @MachineClass(row.MachineStatus)">@row.MachineStatus.ToSwedish()</span></td>
+                                        <td><span class="status @ToolClass(row.ToolStatus)">@row.ToolStatus.ToSwedish()</span></td>
+                                        <td><span class="status @QualityClass(row.QualityStatus)">@row.QualityStatus.ToSwedish()</span></td>
+                                        <td>@row.OperatorName</td>
+                                        <td class="comment">@row.Comment</td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    }
+}
+
+@code {
+    private DateOnly weekStart = WeekHelper.StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
+    private List<MachineItem>? machines;
+    private List<ReportRow>? rows;
+
+    protected override async Task OnInitializedAsync()
+    {
+        machines = await Reports.GetMachinesAsync();
+        await LoadWeekAsync();
+    }
+
+    private async Task LoadWeekAsync() =>
+        rows = await Reports.GetReportsAsync(weekStart, weekStart.AddDays(6));
+
+    private Task PreviousWeek()
+    {
+        weekStart = weekStart.AddDays(-7);
+        return LoadWeekAsync();
+    }
+
+    private Task NextWeek()
+    {
+        weekStart = weekStart.AddDays(7);
+        return LoadWeekAsync();
+    }
+
+    private Task ThisWeek()
+    {
+        weekStart = WeekHelper.StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
+        return LoadWeekAsync();
+    }
+
+    private ReportRow? Find(DateOnly day, Shift shift, int machineId) =>
+        rows!.FirstOrDefault(r => r.Date == day && r.Shift == shift && r.MachineId == machineId);
+
+    // Green = ok, yellow = keep an eye on it, red = problem
+    private static string MachineClass(MachineStatus status) => status switch
+    {
+        MachineStatus.Running => "ok",
+        MachineStatus.Service => "warn",
+        _ => "bad"
+    };
+
+    private static string ToolClass(ToolStatus status) => status switch
+    {
+        ToolStatus.Ok => "ok",
+        ToolStatus.Damaged => "bad",
+        _ => "warn"
+    };
+
+    private static string QualityClass(QualityStatus status) => status switch
+    {
+        QualityStatus.Approved => "ok",
+        QualityStatus.Blocked => "bad",
+        _ => "warn"
+    };
+}

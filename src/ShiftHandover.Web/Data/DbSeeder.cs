@@ -14,23 +14,107 @@ public static class DbSeeder
             return;
 
         var now = nowUtc ?? DateTime.UtcNow;
-
-        var machines = new[] { "Maskin 1", "Maskin 2", "Maskin 3", "Maskin 4", "Maskin 5", "Maskin 6", "Riktverk" }
-            .Select(name => new Machine { Name = name })
-            .ToList();
-        db.Machines.AddRange(machines);
-
-        var issues = new List<Issue>();
-
-        Machine M(string name) => machines.Single(m => m.Name == name);
+        var today = DateOnly.FromDateTime(now);
         DateTime DaysAgo(double days) => now.AddDays(-days);
 
-        Issue Add(string machine, IssueCategory category, Team team, string title,
-            string? action, string? followUp, double daysAgo)
+        // Machines
+        var machines = Enumerable.Range(1, 6)
+            .Select(n => new Machine { Name = $"Maskin {n}" })
+            .ToList();
+        db.Machines.AddRange(machines);
+        Machine M(int number) => machines[number - 1];
+
+        // Tools, each making exactly one part
+        var tools = new List<Tool>();
+        Tool T(string number, string name, string partNumber, string partName)
+        {
+            var tool = new Tool
+            {
+                Number = number,
+                Name = name,
+                Part = new Part { Number = partNumber, Name = partName }
+            };
+            tools.Add(tool);
+            return tool;
+        }
+
+        var v1101 = T("V-1101", "Klippverktyg", "D-101", "Fäste vänster");
+        T("V-1102", "Klippverktyg", "D-102", "Fäste höger");
+        T("V-2201", "Bockverktyg", "D-205", "Täckplåt");
+        var v2202 = T("V-2202", "Stansverktyg", "D-310", "Konsol");
+        var v3301 = T("V-3301", "Följdverktyg", "D-412", "Distans");
+        var v4401 = T("V-4401", "Stansverktyg", "D-518", "Bricka");
+        var v5501 = T("V-5501", "Klippverktyg", "D-620", "Skyddsplåt");
+        var v6601 = T("V-6601", "Bockverktyg", "D-733", "Hållare");
+        T("V-6602", "Följdverktyg", "D-734", "Hållare förstärkt");
+        db.Tools.AddRange(tools);
+
+        // Operators (made-up names)
+        var anna = new Operator { Name = "Anna Lindqvist" };
+        var erik = new Operator { Name = "Erik Johansson" };
+        var sara = new Operator { Name = "Sara Nilsson" };
+        var mikael = new Operator { Name = "Mikael Berg" };
+        var johan = new Operator { Name = "Johan Ek", IsActive = false };
+        db.Operators.AddRange(anna, erik, sara, mikael, johan);
+
+        // Shift reports: generated history for last week and this week,
+        // plus hand-written reports for the latest workday's morning shift
+        var lastWorkday = WeekHelper.LastWorkday(today);
+        var mountedTools = new Dictionary<int, Tool>
+        {
+            [1] = v1101,
+            [2] = v2202,
+            [3] = v3301,
+            [4] = v4401,
+            [5] = v5501,
+            [6] = v6601
+        };
+        var activeOperators = new[] { anna, erik, sara, mikael };
+        var random = new Random(42); // fixed seed: same demo data every time
+
+        for (var date = WeekHelper.StartOfWeek(lastWorkday).AddDays(-7); date < lastWorkday; date = date.AddDays(1))
+        {
+            if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                continue;
+
+            foreach (var shift in Enum.GetValues<Shift>())
+            {
+                foreach (var (number, tool) in mountedTools)
+                {
+                    var reporter = activeOperators[random.Next(activeOperators.Length)];
+                    db.ShiftReports.Add(RandomReport(random, date, shift, M(number), tool, reporter));
+                }
+            }
+        }
+
+        db.ShiftReports.AddRange(
+            ShiftReport.Create(lastWorkday, Shift.Day, M(1), v1101, anna,
+                MachineStatus.Running, ToolStatus.Worn, QualityStatus.CheckRequested,
+                "Grad vid klippkant, VM informerad.", DaysAgo(0.1)),
+            ShiftReport.Create(lastWorkday, Shift.Day, M(2), v2202, sara,
+                MachineStatus.Stopped, ToolStatus.Damaged, QualityStatus.Blocked,
+                "Sprucken stans, detaljerna spärrade.", DaysAgo(0.1)),
+            ShiftReport.Create(lastWorkday, Shift.Day, M(3), v3301, mikael,
+                MachineStatus.Running, ToolStatus.Ok, QualityStatus.Approved, null, DaysAgo(0.1)),
+            ShiftReport.Create(lastWorkday, Shift.Day, M(4), v4401, anna,
+                MachineStatus.Service, ToolStatus.Ok, QualityStatus.Approved,
+                "Hydraulläckage, UH åtgärdar.", DaysAgo(0.1)),
+            ShiftReport.Create(lastWorkday, Shift.Day, M(5), v5501, erik,
+                MachineStatus.Running, ToolStatus.NeedsChange, QualityStatus.CheckRequested,
+                "Planera verktygsbyte till nästa skift.", DaysAgo(0.1)),
+            ShiftReport.Create(lastWorkday, Shift.Day, M(6), v6601, sara,
+                MachineStatus.Running, ToolStatus.Ok, QualityStatus.Approved, null, DaysAgo(0.1)));
+
+
+        // Issues
+        var issues = new List<Issue>();
+        Issue Add(int machine, IssueCategory category, Team team, string title,
+            string? action, string? followUp, double daysAgo, Tool? tool = null)
         {
             var issue = new Issue
             {
                 Machine = M(machine),
+                Tool = tool,
                 Category = category,
                 ResponsibleTeam = team,
                 Title = title,
@@ -42,92 +126,111 @@ public static class DbSeeder
             return issue;
         }
 
-        // Open issues
-        Add("Maskin 1", IssueCategory.Burr, Team.Toolmaker,
-            "Grad vid klippkant på kavitet 2",
+        // Open
+        Add(1, IssueCategory.Burr, Team.Toolmaker, "Grad vid klippkant på kavitet 2",
             "Graden noterad, berörda detaljer sorterade.",
-            "VM bör åtgärda innan graden växer och blir svår att trumla bort.", 2);
-
-        Add("Maskin 2", IssueCategory.Burr, Team.Toolmaker,
-            "Grad på hålkanter, flera kaviteter",
-            null,
-            "Kontrollera verktyget och åtgärda graden.", 9);
-
-        Add("Maskin 6", IssueCategory.Mark, Team.Quality,
-            "Repor på ytan efter trumling",
+            "VM bör åtgärda innan graden växer.", 2, v1101);
+        Add(2, IssueCategory.Burr, Team.Toolmaker, "Grad på hålkanter, flera kaviteter",
+            null, "Kontrollera verktyget och åtgärda graden.", 9, v2202);
+        Add(6, IssueCategory.Mark, Team.Quality, "Repor på ytan efter trumling",
             "Detaljerna spärrade för bedömning.",
-            "Kvalitet bedömer om detaljerna kan godkännas.", 2);
+            "Kvalitet bedömer om detaljerna kan godkännas.", 2, v6601);
 
         // In progress
-        var radius = Add("Maskin 1", IssueCategory.Measurement, Team.Quality,
-            "Radie på vänster kavitet nära toleransgränsen",
-            "Ommätt med annan fixtur, mätningen godkänd men nära gränsen.",
-            "Kvalitet följer upp nästa batch.", 3);
-        radius.ChangeStatus(IssueStatus.InProgress, "Kvalitet mäter extra detaljer", DaysAgo(2));
-
-        var testSetup = Add("Maskin 3", IssueCategory.Measurement, Team.Quality,
-            "Nytt mätupplägg under testperiod",
-            "Detaljer körda och mätta, protokoll lämnat till ansvarig.",
-            "Utvärdera resultatet efter testperioden.", 10);
-        testSetup.ChangeStatus(IssueStatus.InProgress, "Resultaten ser lovande ut", DaysAgo(8));
-
-        var service = Add("Maskin 5", IssueCategory.MachineFault, Team.Maintenance,
-            "Planerad service av smörjsystemet",
-            "Service påbörjad.",
-            null, 5);
-        service.ChangeStatus(IssueStatus.InProgress, "UH har påbörjat servicen", DaysAgo(4));
-
-        var crackedPunch = Add("Maskin 2", IssueCategory.ToolDamage, Team.Toolmaker,
-            "Sprucken stans upptäckt vid kontroll",
-            "Maskinen stoppad, reservstans monterad.",
-            "VM byter till ny stans.", 0.2);
-        crackedPunch.ChangeStatus(IssueStatus.InProgress, "Reservstans monterad, körs vidare", DaysAgo(0.1));
+        Add(1, IssueCategory.Measurement, Team.Quality, "Radie på vänster kavitet nära toleransgränsen",
+            "Ommätt med annan fixtur, godkänd men nära gränsen.",
+            "Kvalitet följer upp nästa batch.", 3, v1101)
+            .ChangeStatus(IssueStatus.InProgress, "Kvalitet mäter extra detaljer", DaysAgo(2));
+        Add(3, IssueCategory.Measurement, Team.Quality, "Nytt mätupplägg under testperiod",
+            "Detaljer körda och mätta, protokoll lämnat.",
+            "Utvärdera efter testperioden.", 10, v3301)
+            .ChangeStatus(IssueStatus.InProgress, "Resultaten ser lovande ut", DaysAgo(8));
+        Add(5, IssueCategory.MachineFault, Team.Maintenance, "Planerad service av smörjsystemet",
+            "Service påbörjad.", null, 5)
+            .ChangeStatus(IssueStatus.InProgress, "UH har påbörjat servicen", DaysAgo(4));
+        Add(2, IssueCategory.ToolDamage, Team.Toolmaker, "Sprucken stans upptäckt vid kontroll",
+            "Maskinen stoppad.", "VM byter till ny stans.", 0.2, v2202)
+            .ChangeStatus(IssueStatus.InProgress, "VM har hämtat verktyget", DaysAgo(0.1));
 
         // Waiting for another team
-        var feedSensor = Add("Maskin 2", IssueCategory.MachineFault, Team.Toolmaker,
-            "Givare för matning ger ingen signal",
-            "Ingen åtgärd ännu.",
-            "VM kontrollerar givaren och kablaget.", 4);
-        feedSensor.ChangeStatus(IssueStatus.WaitingForTeam, "Väntar på VM", DaysAgo(3));
+        Add(2, IssueCategory.MachineFault, Team.Toolmaker, "Givare för matning ger ingen signal",
+            "Ingen åtgärd ännu.", "VM kontrollerar givaren och kablaget.", 4)
+            .ChangeStatus(IssueStatus.WaitingForTeam, "Väntar på VM", DaysAgo(3));
+        Add(4, IssueCategory.MachineFault, Team.Maintenance, "Hydraulläckage vid pressbordet",
+            "Absorbent utlagd.", "UH byter tätning.", 1)
+            .ChangeStatus(IssueStatus.WaitingForTeam, "Väntar på reservdel", DaysAgo(0.8));
 
-        var leak = Add("Maskin 4", IssueCategory.MachineFault, Team.Maintenance,
-            "Hydraulläckage vid pressbordet",
-            "Absorbent utlagd, maskinen körs med tillsyn.",
-            "UH byter tätning vid nästa stopp.", 1);
-        leak.ChangeStatus(IssueStatus.WaitingForTeam, "Väntar på UH och reservdel", DaysAgo(0.8));
-
-        // Fixed, waiting for quality to verify
-        var flatness = Add("Riktverk", IssueCategory.Measurement, Team.Production,
-            "Planhet utanför tolerans på några detaljer",
-            "Riktverket justerat, nya detaljer mäts OK.",
-            "Kvalitet verifierar nästa batch.", 7);
-        flatness.ChangeStatus(IssueStatus.Fixed, "Justerat och kontrollmätt", DaysAgo(6));
+        // Fixed, waiting for quality
+        Add(6, IssueCategory.Measurement, Team.Production, "Planhet utanför tolerans på några detaljer",
+            "Justerat, nya detaljer mäts OK.", "Kvalitet verifierar nästa batch.", 7, v6601)
+            .ChangeStatus(IssueStatus.Fixed, "Justerat och kontrollmätt", DaysAgo(6));
 
         // Verified and closed
-        var pressMark = Add("Maskin 1", IssueCategory.ToolDamage, Team.Toolmaker,
-            "Tryckmärke på ovansidan, höger kavitet",
-            "Slitna delar i verktyget bytta.",
-            null, 6);
+        var pressMark = Add(1, IssueCategory.ToolDamage, Team.Toolmaker, "Tryckmärke på ovansidan, höger kavitet",
+            "Slitna delar i verktyget bytta.", null, 6, v1101);
         pressMark.ChangeStatus(IssueStatus.Fixed, "Delar bytta av VM", DaysAgo(5));
         pressMark.ChangeStatus(IssueStatus.Verified, "Kvalitet godkände detaljerna", DaysAgo(4));
 
-        var instruction = Add("Maskin 3", IssueCategory.Other, Team.Production,
-            "Ny instruktion för uppstart efter verktygsbyte",
-            "Instruktionen uppsatt vid maskinen.",
-            null, 14);
-        instruction.ChangeStatus(IssueStatus.Fixed, null, DaysAgo(13));
-        instruction.ChangeStatus(IssueStatus.Verified, null, DaysAgo(12));
-
         // Recurring: verified, then reopened when the problem came back
-        var recurring = Add("Maskin 1", IssueCategory.Mark, Team.Toolmaker,
-            "Märke intill hål på höger kavitet",
-            "Verktyget polerat.",
-            "Bevaka om märket kommer tillbaka.", 12);
+        var recurring = Add(1, IssueCategory.Mark, Team.Toolmaker, "Märke intill hål på höger kavitet",
+            "Verktyget polerat.", "Bevaka om märket kommer tillbaka.", 12, v1101);
         recurring.ChangeStatus(IssueStatus.Fixed, "Polerat av VM", DaysAgo(10));
         recurring.ChangeStatus(IssueStatus.Verified, "Godkänt av kvalitet", DaysAgo(9));
         recurring.ChangeStatus(IssueStatus.Open, "Märket har kommit tillbaka", DaysAgo(1));
 
         db.Issues.AddRange(issues);
         await db.SaveChangesAsync();
+    }
+    // Anything not normal gets one of these, so Spärrat always has a comment
+    private static readonly string[] ProblemNotes =
+    [
+        "Grad noterad, VM informerad.",
+        "Mätning nära toleransgränsen, kvalitet kontaktad.",
+        "Kort stopp för justering.",
+        "Extra kontroll genomförd.",
+        "Uppföljning behövs vid nästa skift."
+    ];
+
+    private static ShiftReport RandomReport(Random rng, DateOnly date, Shift shift,
+        Machine machine, Tool tool, Operator reporter)
+    {
+        // Mostly normal, sometimes a problem, like real production
+        var toolStatus = rng.Next(100) switch
+        {
+            < 75 => ToolStatus.Ok,
+            < 90 => ToolStatus.Worn,
+            < 97 => ToolStatus.NeedsChange,
+            _ => ToolStatus.Damaged
+        };
+
+        // Rule: a damaged tool always means the machine is stopped
+        var machineStatus = toolStatus == ToolStatus.Damaged
+            ? MachineStatus.Stopped
+            : rng.Next(100) switch
+            {
+                < 90 => MachineStatus.Running,
+                < 95 => MachineStatus.Stopped,
+                _ => MachineStatus.Service
+            };
+
+        var qualityStatus = rng.Next(100) switch
+        {
+            < 85 => QualityStatus.Approved,
+            < 97 => QualityStatus.CheckRequested,
+            _ => QualityStatus.Blocked
+        };
+
+        var allNormal = toolStatus == ToolStatus.Ok
+            && machineStatus == MachineStatus.Running
+            && qualityStatus == QualityStatus.Approved;
+        var comment = allNormal ? null : ProblemNotes[rng.Next(ProblemNotes.Length)];
+
+        // Reports are written during the shift: 06-14, 14-22, 22-06
+        var shiftStart = shift switch { Shift.Day => 6, Shift.Evening => 14, _ => 22 };
+        var created = date.ToDateTime(new TimeOnly(shiftStart, 0), DateTimeKind.Utc)
+            .AddMinutes(rng.Next(480));
+
+        return ShiftReport.Create(date, shift, machine, tool, reporter,
+            machineStatus, toolStatus, qualityStatus, comment, created);
     }
 }

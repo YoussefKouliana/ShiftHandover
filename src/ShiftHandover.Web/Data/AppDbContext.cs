@@ -8,6 +8,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Machine> Machines => Set<Machine>();
     public DbSet<Issue> Issues => Set<Issue>();
     public DbSet<StatusChange> StatusChanges => Set<StatusChange>();
+    public DbSet<Part> Parts => Set<Part>();
+    public DbSet<Tool> Tools => Set<Tool>();
+    public DbSet<Operator> Operators => Set<Operator>();
+    public DbSet<ShiftReport> ShiftReports => Set<ShiftReport>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,6 +37,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasForeignKey(i => i.MachineId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            b.HasOne(i => i.Tool)
+                .WithMany()
+                .HasForeignKey(i => i.ToolId);
+
             b.HasMany(i => i.History)
                 .WithOne()
                 .HasForeignKey(s => s.IssueId)
@@ -47,6 +55,51 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             b.Property(s => s.FromStatus).HasConversion<string>().HasMaxLength(30);
             b.Property(s => s.ToStatus).HasConversion<string>().HasMaxLength(30);
             b.Property(s => s.Comment).HasMaxLength(500);
+        });
+
+                modelBuilder.Entity<Part>(b =>
+        {
+            b.Property(p => p.Number).HasMaxLength(30).IsRequired();
+            b.Property(p => p.Name).HasMaxLength(100).IsRequired();
+            b.HasIndex(p => p.Number).IsUnique();
+        });
+
+        modelBuilder.Entity<Tool>(b =>
+        {
+            b.Property(t => t.Number).HasMaxLength(30).IsRequired();
+            b.Property(t => t.Name).HasMaxLength(100).IsRequired();
+            b.HasIndex(t => t.Number).IsUnique();
+
+            b.HasOne(t => t.Part)
+                .WithMany()
+                .HasForeignKey(t => t.PartId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Optional: null means the tool is in the tool room
+            b.HasOne(t => t.CurrentMachine)
+                .WithMany()
+                .HasForeignKey(t => t.CurrentMachineId);
+        });
+
+        modelBuilder.Entity<Operator>(b =>
+        {
+            b.Property(o => o.Name).HasMaxLength(100).IsRequired();
+        });
+
+        modelBuilder.Entity<ShiftReport>(b =>
+        {
+            b.Property(r => r.Shift).HasConversion<string>().HasMaxLength(20);
+            b.Property(r => r.MachineStatus).HasConversion<string>().HasMaxLength(30);
+            b.Property(r => r.ToolStatus).HasConversion<string>().HasMaxLength(30);
+            b.Property(r => r.QualityStatus).HasConversion<string>().HasMaxLength(30);
+            b.Property(r => r.Comment).HasMaxLength(1000);
+
+            b.HasOne(r => r.Machine).WithMany().HasForeignKey(r => r.MachineId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne(r => r.Tool).WithMany().HasForeignKey(r => r.ToolId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne(r => r.Operator).WithMany().HasForeignKey(r => r.OperatorId).OnDelete(DeleteBehavior.Restrict);
+
+            // Only one report per machine, date and shift
+            b.HasIndex(r => new { r.MachineId, r.Date, r.Shift }).IsUnique();
         });
     }
 }

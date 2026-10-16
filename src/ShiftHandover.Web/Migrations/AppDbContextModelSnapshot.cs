@@ -64,6 +64,9 @@ namespace ShiftHandover.Web.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
+                    b.Property<int?>("ToolId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedUtc")
                         .HasColumnType("datetime2");
 
@@ -72,6 +75,8 @@ namespace ShiftHandover.Web.Migrations
                     b.HasIndex("MachineId");
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("ToolId");
 
                     b.ToTable("Issues");
                 });
@@ -95,6 +100,112 @@ namespace ShiftHandover.Web.Migrations
                         .IsUnique();
 
                     b.ToTable("Machines");
+                });
+
+            modelBuilder.Entity("ShiftHandover.Web.Domain.Operator", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Operators");
+                });
+
+            modelBuilder.Entity("ShiftHandover.Web.Domain.Part", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Number")
+                        .IsUnique();
+
+                    b.ToTable("Parts");
+                });
+
+            modelBuilder.Entity("ShiftHandover.Web.Domain.ShiftReport", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<int>("MachineId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MachineStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("OperatorId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("QualityStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Shift")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("ToolId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ToolStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OperatorId");
+
+                    b.HasIndex("ToolId");
+
+                    b.HasIndex("MachineId", "Date", "Shift")
+                        .IsUnique();
+
+                    b.ToTable("ShiftReports");
                 });
 
             modelBuilder.Entity("ShiftHandover.Web.Domain.StatusChange", b =>
@@ -132,6 +243,42 @@ namespace ShiftHandover.Web.Migrations
                     b.ToTable("StatusChanges");
                 });
 
+            modelBuilder.Entity("ShiftHandover.Web.Domain.Tool", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CurrentMachineId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("PartId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurrentMachineId");
+
+                    b.HasIndex("Number")
+                        .IsUnique();
+
+                    b.HasIndex("PartId");
+
+                    b.ToTable("Tools");
+                });
+
             modelBuilder.Entity("ShiftHandover.Web.Domain.Issue", b =>
                 {
                     b.HasOne("ShiftHandover.Web.Domain.Machine", "Machine")
@@ -140,7 +287,40 @@ namespace ShiftHandover.Web.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ShiftHandover.Web.Domain.Tool", "Tool")
+                        .WithMany()
+                        .HasForeignKey("ToolId");
+
                     b.Navigation("Machine");
+
+                    b.Navigation("Tool");
+                });
+
+            modelBuilder.Entity("ShiftHandover.Web.Domain.ShiftReport", b =>
+                {
+                    b.HasOne("ShiftHandover.Web.Domain.Machine", "Machine")
+                        .WithMany()
+                        .HasForeignKey("MachineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShiftHandover.Web.Domain.Operator", "Operator")
+                        .WithMany()
+                        .HasForeignKey("OperatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShiftHandover.Web.Domain.Tool", "Tool")
+                        .WithMany()
+                        .HasForeignKey("ToolId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Machine");
+
+                    b.Navigation("Operator");
+
+                    b.Navigation("Tool");
                 });
 
             modelBuilder.Entity("ShiftHandover.Web.Domain.StatusChange", b =>
@@ -150,6 +330,23 @@ namespace ShiftHandover.Web.Migrations
                         .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ShiftHandover.Web.Domain.Tool", b =>
+                {
+                    b.HasOne("ShiftHandover.Web.Domain.Machine", "CurrentMachine")
+                        .WithMany()
+                        .HasForeignKey("CurrentMachineId");
+
+                    b.HasOne("ShiftHandover.Web.Domain.Part", "Part")
+                        .WithMany()
+                        .HasForeignKey("PartId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CurrentMachine");
+
+                    b.Navigation("Part");
                 });
 
             modelBuilder.Entity("ShiftHandover.Web.Domain.Issue", b =>

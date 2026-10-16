@@ -15,7 +15,8 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddScoped<HandoverService>();    
+builder.Services.AddScoped<HandoverService>();
+builder.Services.AddScoped<ShiftReportService>();
 
 var app = builder.Build();
 
