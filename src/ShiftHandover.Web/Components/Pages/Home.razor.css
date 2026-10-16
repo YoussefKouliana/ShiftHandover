@@ -1,0 +1,95 @@
+.summary {
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(220px, 1fr));
+    gap: 1rem;
+    overflow-x: auto;
+}
+
+.board-column {
+    background: #f4f5f7;
+    border-radius: 8px;
+    padding: 0.75rem;
+    min-height: 200px;
+}
+
+.board-column h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.issue-card {
+    background: #fff;
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.6rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+    border-left: 4px solid #6c757d;
+}
+
+.issue-card.old {
+    border-left-color: #dc3545;
+}
+
+.issue-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+
+.age {
+    color: #6c757d;
+}
+
+.issue-card.old .age {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.issue-title {
+    margin: 0.35rem 0 0.5rem;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.tag {
+    font-size: 0.75rem;
+    background: #e9ecef;
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+}
+
+.tag.team {
+    background: #e7f1ff;
+    color: #0b5ed7;
+}
+
+.tag.recurring {
+    background: #fde2e1;
+    color: #b02a37;
+    font-weight: 600;
+}
+
+.empty {
+    color: #6c757d;
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+@media (max-width: 900px) {
+    .board {
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+    }
+}

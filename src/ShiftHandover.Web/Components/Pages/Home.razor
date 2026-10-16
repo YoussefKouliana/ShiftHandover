@@ -1,7 +1,87 @@
 ﻿@page "/"
+@using ShiftHandover.Web.Domain
+@using ShiftHandover.Web.Services
+@inject HandoverService Handover
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Skiftöverlämningstavla</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Skiftöverlämningstavla</h1>
 
-Welcome to your new app.
+@if (issues is null)
+{
+    <p>Laddar...</p>
+}
+else
+{
+    <p class="summary">@issues.Count aktiva ärenden · @verifiedCount verifierade och stängda</p>
+
+    <div class="board">
+        @foreach (var status in Columns)
+        {
+            var columnIssues = issues.Where(i => i.Status == status).ToList();
+
+            <section class="board-column">
+                <h2>
+                    @ColumnTitle(status)
+                    <span class="badge bg-secondary">@columnIssues.Count</span>
+                </h2>
+
+                @if (columnIssues.Count == 0)
+                {
+                    <p class="empty">Inga ärenden</p>
+                }
+
+                @foreach (var issue in columnIssues)
+                {
+                    <article class="issue-card @(IsOld(issue) ? "old" : "")">
+                        <div class="issue-header">
+                            <strong>@issue.MachineName</strong>
+                            <span class="age">@AgeText(issue.CreatedUtc, now)</span>
+                        </div>
+                        <p class="issue-title">@issue.Title</p>
+                        <div class="tags">
+                            <span class="tag">@issue.Category.ToSwedish()</span>
+                            <span class="tag team">@issue.ResponsibleTeam.ToSwedish()</span>
+                            @if (issue.IsRecurring)
+                            {
+                                <span class="tag recurring">Återkommande</span>
+                            }
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+    </div>
+}
+
+@code {
+    private static readonly IssueStatus[] Columns =
+        [IssueStatus.Open, IssueStatus.InProgress, IssueStatus.WaitingForTeam, IssueStatus.Fixed];
+
+    private List<IssueCard>? issues;
+    private int verifiedCount;
+    private DateTime now;
+
+    protected override async Task OnInitializedAsync()
+    {
+        now = DateTime.UtcNow;
+        issues = await Handover.GetActiveIssuesAsync();
+        verifiedCount = await Handover.CountVerifiedAsync();
+    }
+
+    // Issues older than a week get a red marker so they are not forgotten
+    private bool IsOld(IssueCard issue) => now - issue.CreatedUtc > TimeSpan.FromDays(7);
+
+    private static string AgeText(DateTime createdUtc, DateTime now)
+    {
+        var age = now - createdUtc;
+        return age.TotalDays >= 1
+            ? $"{(int)age.TotalDays} dagar sedan"
+            : age.TotalHours >= 1
+                ? $"{(int)age.TotalHours} timmar sedan"
+                : $"{Math.Max(1, (int)age.TotalMinutes)} minuter sedan";
+    }
+
+    private static string ColumnTitle(IssueStatus status) =>
+        status == IssueStatus.Fixed ? "Åtgärdat, väntar på kvalitet" : status.ToSwedish();
+}

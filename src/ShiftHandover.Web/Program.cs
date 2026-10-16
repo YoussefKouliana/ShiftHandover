@@ -1,16 +1,21 @@
 using ShiftHandover.Web.Components;
 using Microsoft.EntityFrameworkCore;
 using ShiftHandover.Web.Data;
+using ShiftHandover.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-builder.Services.AddDbContext<AppDbContext>(options =>
+// Add services to the container.
+//using factory pattern to avoid issues with multiple threads using the same DbContext instance
+//its the best approach for Blazor Server apps, as it allows for creating new DbContext instances per request or operation, ensuring thread safety and avoiding potential conflicts.
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddScoped<HandoverService>();    
 
 var app = builder.Build();
 
