@@ -30,6 +30,7 @@ public static class SwedishLabels
         IssueCategory.Measurement => "Mätning",
         IssueCategory.ToolDamage => "Verktygsskada",
         IssueCategory.MachineFault => "Maskinfel",
+        IssueCategory.QualityDeviation => "Kvalitetsavvikelse",
         IssueCategory.Other => "Övrigt",
         _ => category.ToString()
     };

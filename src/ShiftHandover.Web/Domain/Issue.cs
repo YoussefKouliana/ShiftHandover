@@ -17,6 +17,9 @@ public class Issue
         // Optional: which tool the issue concerns
     public int? ToolId { get; set; }
     public Tool? Tool { get; set; }
+        // Set when the issue was created automatically from a shift report
+    public int? SourceReportId { get; set; }
+    public ShiftReport? SourceReport { get; set; }
 
     public bool IsClosed => Status == IssueStatus.Verified;
 
@@ -45,5 +48,46 @@ public class Issue
 
         Status = newStatus;
         UpdatedUtc = now;
+    }
+        // Problems in a shift report become issues on the board.
+    // Tool problems go to the toolmakers, bad quality goes to quality.
+    public static List<Issue> FromShiftReport(ShiftReport report)
+    {
+        var issues = new List<Issue>();
+        var origin = $"Skapad automatiskt från {report.Shift.ToSwedish().ToLowerInvariant()} {report.Date:yyyy-MM-dd}.";
+
+        if (report.ToolStatus is ToolStatus.Crash or ToolStatus.ToolProblem && report.Tool is not null)
+        {
+            issues.Add(new Issue
+            {
+                Machine = report.Machine,
+                Tool = report.Tool,
+                SourceReport = report,
+                Category = IssueCategory.ToolDamage,
+                ResponsibleTeam = Team.Toolmaker,
+                Title = $"{report.ToolStatus.Value.ToSwedish()} på verktyg {report.Tool.Number}",
+                ActionTaken = report.Comment,
+                FollowUp = origin,
+                CreatedUtc = report.CreatedUtc
+            });
+        }
+
+        if (report.QualityStatus is QualityStatus.NotOk or QualityStatus.Blocked)
+        {
+            issues.Add(new Issue
+            {
+                Machine = report.Machine,
+                Tool = report.Tool,
+                SourceReport = report,
+                Category = IssueCategory.QualityDeviation,
+                ResponsibleTeam = Team.Quality,
+                Title = $"Kvalitet {report.QualityStatus.Value.ToSwedish().ToLowerInvariant()} på {report.Machine.Name}",
+                ActionTaken = report.Comment,
+                FollowUp = origin,
+                CreatedUtc = report.CreatedUtc
+            });
+        }
+
+        return issues;
     }
 }

@@ -54,6 +54,9 @@ namespace ShiftHandover.Web.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<int?>("SourceReportId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -73,6 +76,8 @@ namespace ShiftHandover.Web.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("MachineId");
+
+                    b.HasIndex("SourceReportId");
 
                     b.HasIndex("Status");
 
@@ -249,11 +254,18 @@ namespace ShiftHandover.Web.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ShiftHandover.Web.Domain.ShiftReport", "SourceReport")
+                        .WithMany()
+                        .HasForeignKey("SourceReportId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ShiftHandover.Web.Domain.Tool", "Tool")
                         .WithMany()
                         .HasForeignKey("ToolId");
 
                     b.Navigation("Machine");
+
+                    b.Navigation("SourceReport");
 
                     b.Navigation("Tool");
                 });

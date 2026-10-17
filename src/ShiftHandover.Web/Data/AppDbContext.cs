@@ -36,6 +36,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasForeignKey(i => i.MachineId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            b.HasOne(i => i.SourceReport)
+                .WithMany()
+                .HasForeignKey(i => i.SourceReportId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             b.HasOne(i => i.Tool)
                 .WithMany()
                 .HasForeignKey(i => i.ToolId);

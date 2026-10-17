@@ -15,7 +15,8 @@ public record ReportRow(
     ToolStatus? ToolStatus,
     QualityStatus? QualityStatus,
     string OperatorName,
-    string? Comment);
+    string? Comment,
+    bool HasIssue);
 
 // Used by the shift report form (Part 2)
 public record ToolOption(int Id, string Number, int? CurrentMachineId, string? CurrentMachineName);
@@ -24,8 +25,7 @@ public record OperatorOption(int Id, string Name);
 
 public record FormOptions(List<MachineItem> Machines, List<ToolOption> Tools, List<OperatorOption> Operators);
 
-public record ShiftSaveResult(bool Success, int SavedCount, string? Error);
-public record SaveResult(bool Success, string? Error);
+public record ShiftSaveResult(bool Success, int SavedCount, string? Error, int CreatedIssues = 0);public record SaveResult(bool Success, string? Error);
 
 public class ShiftReportService(IDbContextFactory<AppDbContext> dbFactory)
 {
@@ -54,7 +54,8 @@ public class ShiftReportService(IDbContextFactory<AppDbContext> dbFactory)
                 r.ToolStatus,
                 r.QualityStatus,
                 r.Operator.Name,
-                r.Comment))
+                r.Comment,
+                db.Issues.Any(i => i.SourceReportId == r.Id)))
             .ToListAsync();
     }
 
@@ -179,6 +180,30 @@ public class ShiftReportService(IDbContextFactory<AppDbContext> dbFactory)
 
         db.ShiftReports.AddRange(reports);
 
+                // Problems become issues on the board, unless an active one already exists
+        var activeIssues = await db.Issues
+            .Where(i => i.Status != IssueStatus.Verified)
+            .Select(i => new { i.MachineId, i.ToolId, i.Category })
+            .ToListAsync();
+
+        var createdIssues = 0;
+        foreach (var report in reports)
+        {
+            foreach (var issue in Issue.FromShiftReport(report))
+            {
+                var alreadyOnBoard = activeIssues.Any(a =>
+                    a.MachineId == report.Machine.Id
+                    && a.ToolId == report.Tool?.Id
+                    && a.Category == issue.Category);
+
+                if (!alreadyOnBoard)
+                {
+                    db.Issues.Add(issue);
+                    createdIssues++;
+                }
+            }
+        }
+
         try
         {
             await db.SaveChangesAsync();
@@ -189,6 +214,6 @@ public class ShiftReportService(IDbContextFactory<AppDbContext> dbFactory)
                 "Skiftet kunde inte sparas. Någon kan ha rapporterat samtidigt, ladda om sidan.");
         }
 
-        return new ShiftSaveResult(true, reports.Count, null);
+                return new ShiftSaveResult(true, reports.Count, null, createdIssues);
     }
      }

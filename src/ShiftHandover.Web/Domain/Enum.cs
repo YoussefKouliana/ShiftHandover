@@ -24,6 +24,8 @@ public enum IssueCategory
     Measurement,
     ToolDamage,
     MachineFault,
+    QualityDeviation,
+
     Other
 }
 

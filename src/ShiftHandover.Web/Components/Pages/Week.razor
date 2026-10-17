@@ -77,7 +77,13 @@ else
                                             }
                                         </td>
                                         <td>@row.OperatorName</td>
-                                        <td class="comment">@row.Comment</td>
+                                                                               <td class="comment">
+                                            @if (row.HasIssue)
+                                            {
+                                                <a href="" class="badge bg-warning text-dark">Ärende</a>
+                                            }
+                                            @row.Comment
+                                        </td>
                                     }
                                 </tr>
                             }

@@ -193,7 +193,14 @@ else
         if (result.Success)
         {
             await LoadRowsAsync();
-            message = result.SavedCount == 1 ? "1 maskin sparad." : $"{result.SavedCount} maskiner sparade.";
+                       var saved = result.SavedCount == 1 ? "1 maskin sparad" : $"{result.SavedCount} maskiner sparade";
+            var issues = result.CreatedIssues switch
+            {
+                0 => "",
+                1 => ", 1 ärende skapat på tavlan",
+                var n => $", {n} ärenden skapade på tavlan"
+            };
+            message = saved + issues + ".";
             messageIsError = false;
         }
         else
