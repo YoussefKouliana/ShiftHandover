@@ -9,7 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 //using factory pattern to avoid issues with multiple threads using the same DbContext instance
 //its the best approach for Blazor Server apps, as it allows for creating new DbContext instances per request or operation, ensuring thread safety and avoiding potential conflicts.
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        // Azure SQL serverless pauses when idle and needs a moment to wake up
+        sql => sql.EnableRetryOnFailure(maxRetryCount: 6, maxRetryDelay: TimeSpan.FromSeconds(10), errorNumbersToAdd: null)));
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
