@@ -123,32 +123,6 @@ namespace ShiftHandover.Web.Migrations
                     b.ToTable("Operators");
                 });
 
-            modelBuilder.Entity("ShiftHandover.Web.Domain.Part", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Number")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Number")
-                        .IsUnique();
-
-                    b.ToTable("Parts");
-                });
-
             modelBuilder.Entity("ShiftHandover.Web.Domain.ShiftReport", b =>
                 {
                     b.Property<int>("Id")
@@ -252,18 +226,10 @@ namespace ShiftHandover.Web.Migrations
                     b.Property<int?>("CurrentMachineId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<string>("Number")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
-
-                    b.Property<int>("PartId")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -271,8 +237,6 @@ namespace ShiftHandover.Web.Migrations
 
                     b.HasIndex("Number")
                         .IsUnique();
-
-                    b.HasIndex("PartId");
 
                     b.ToTable("Tools");
                 });
@@ -335,15 +299,7 @@ namespace ShiftHandover.Web.Migrations
                         .WithMany()
                         .HasForeignKey("CurrentMachineId");
 
-                    b.HasOne("ShiftHandover.Web.Domain.Part", "Part")
-                        .WithMany()
-                        .HasForeignKey("PartId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("CurrentMachine");
-
-                    b.Navigation("Part");
                 });
 
             modelBuilder.Entity("ShiftHandover.Web.Domain.Issue", b =>

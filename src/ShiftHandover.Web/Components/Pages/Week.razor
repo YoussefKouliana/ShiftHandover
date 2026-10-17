@@ -33,7 +33,6 @@ else
                             <tr>
                                 <th>Maskin</th>
                                 <th>Verktyg</th>
-                                <th>Detalj</th>
                                 <th>Maskinstatus</th>
                                 <th>Verktygsstatus</th>
                                 <th>Kvalitetsstatus</th>
@@ -49,14 +48,14 @@ else
                                     <td><strong>@machine.Name</strong></td>
                                     @if (row is null)
                                     {
-                                        <td colspan="7" class="missing">Ej rapporterad</td>
+                                        <td colspan="6" class="missing">Ej rapporterad</td>
                                     }
                                     else
                                     {
-                                        <td>@row.ToolText</td>
-                                                                           <td>@(row.ToolText ?? "Inget verktyg")</td>
-                                        <td>@(row.PartText ?? "-")</td>
-                                        <td><span class="status @MachineClass(row.MachineStatus)">@row.MachineStatus.ToSwedish()</span></td>
+                                        <td>@(row.ToolNumber ?? "Inget verktyg")</td>
+                                        <td>
+                                            <span class="status @MachineClass(row.MachineStatus)">@row.MachineStatus.ToSwedish()</span>
+                                        </td>
                                         <td>
                                             @if (row.ToolStatus is { } toolStatus)
                                             {
@@ -125,8 +124,7 @@ else
     private ReportRow? Find(DateOnly day, Shift shift, int machineId) =>
         rows!.FirstOrDefault(r => r.Date == day && r.Shift == shift && r.MachineId == machineId);
 
-    // Green = ok, yellow = keep an eye on it, red = problem
-       // Green = ok, yellow = keep an eye on it, red = problem, grey = not in use
+    // Green = ok, yellow = keep an eye on it, red = problem, grey = not in use
     private static string MachineClass(MachineStatus status) => status switch
     {
         MachineStatus.ReadyToRun => "ok",

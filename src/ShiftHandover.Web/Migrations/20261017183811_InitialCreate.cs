@@ -39,28 +39,12 @@ namespace ShiftHandover.Web.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Parts",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Number = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Parts", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Tools",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Number = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    PartId = table.Column<int>(type: "int", nullable: false),
                     CurrentMachineId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
@@ -71,12 +55,6 @@ namespace ShiftHandover.Web.Migrations
                         column: x => x.CurrentMachineId,
                         principalTable: "Machines",
                         principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Tools_Parts_PartId",
-                        column: x => x.PartId,
-                        principalTable: "Parts",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -197,12 +175,6 @@ namespace ShiftHandover.Web.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Parts_Number",
-                table: "Parts",
-                column: "Number",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ShiftReports_MachineId_Date_Shift",
                 table: "ShiftReports",
                 columns: new[] { "MachineId", "Date", "Shift" },
@@ -233,11 +205,6 @@ namespace ShiftHandover.Web.Migrations
                 table: "Tools",
                 column: "Number",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Tools_PartId",
-                table: "Tools",
-                column: "PartId");
         }
 
         /// <inheritdoc />
@@ -260,9 +227,6 @@ namespace ShiftHandover.Web.Migrations
 
             migrationBuilder.DropTable(
                 name: "Machines");
-
-            migrationBuilder.DropTable(
-                name: "Parts");
         }
     }
 }

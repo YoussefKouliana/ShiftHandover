@@ -8,7 +8,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Machine> Machines => Set<Machine>();
     public DbSet<Issue> Issues => Set<Issue>();
     public DbSet<StatusChange> StatusChanges => Set<StatusChange>();
-    public DbSet<Part> Parts => Set<Part>();
     public DbSet<Tool> Tools => Set<Tool>();
     public DbSet<Operator> Operators => Set<Operator>();
     public DbSet<ShiftReport> ShiftReports => Set<ShiftReport>();
@@ -57,23 +56,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             b.Property(s => s.Comment).HasMaxLength(500);
         });
 
-        modelBuilder.Entity<Part>(b =>
-{
-    b.Property(p => p.Number).HasMaxLength(30).IsRequired();
-    b.Property(p => p.Name).HasMaxLength(100).IsRequired();
-    b.HasIndex(p => p.Number).IsUnique();
-});
 
-        modelBuilder.Entity<Tool>(b =>
+             modelBuilder.Entity<Tool>(b =>
         {
             b.Property(t => t.Number).HasMaxLength(30).IsRequired();
-            b.Property(t => t.Name).HasMaxLength(100).IsRequired();
             b.HasIndex(t => t.Number).IsUnique();
-
-            b.HasOne(t => t.Part)
-                .WithMany()
-                .HasForeignKey(t => t.PartId)
-                .OnDelete(DeleteBehavior.Restrict);
 
             // Optional: null means the tool is in the tool room
             b.HasOne(t => t.CurrentMachine)

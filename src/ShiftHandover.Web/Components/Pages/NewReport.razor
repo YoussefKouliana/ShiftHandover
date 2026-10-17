@@ -1,0 +1,205 @@
+@page "/ny-rapport"
+@using ShiftHandover.Web.Domain
+@using ShiftHandover.Web.Services
+@inject ShiftReportService Reports
+
+<PageTitle>Ny skiftrapport</PageTitle>
+
+<h1>Ny skiftrapport</h1>
+
+<div class="shift-picker">
+    <div>
+        <label class="form-label">Datum</label>
+        <input type="date" class="form-control" @bind="date" @bind:after="LoadRowsAsync" />
+    </div>
+    <div>
+        <label class="form-label">Skift</label>
+        <select class="form-select" @bind="shift" @bind:after="LoadRowsAsync">
+            @foreach (var s in Enum.GetValues<Shift>())
+            {
+                <option value="@s">@s.ToSwedish()</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (message is not null)
+{
+    <div class="alert @(messageIsError ? "alert-danger" : "alert-success")">@message</div>
+}
+
+@if (rows is null || options is null)
+{
+    <p>Laddar...</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table align-middle report-table">
+            <thead>
+                <tr>
+                    <th>Maskin</th>
+                    <th>Verktyg</th>
+                    <th>Maskinstatus</th>
+                    <th>Verktygsstatus</th>
+                    <th>Kvalitet</th>
+                    <th>Operatör</th>
+                    <th>Kommentar</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in rows)
+                {
+                    <tr class="@(row.Error is not null ? "row-error" : "")">
+                        <td><strong>@row.MachineName</strong></td>
+
+                        @if (row.Saved is { } saved)
+                        {
+                            <td>@(saved.ToolNumber ?? "Inget verktyg")</td>
+                            <td>@saved.MachineStatus.ToSwedish()</td>
+                            <td>@(saved.ToolStatus?.ToSwedish() ?? "-")</td>
+                            <td>@(saved.QualityStatus?.ToSwedish() ?? "-")</td>
+                            <td>@saved.OperatorName</td>
+                            <td><span class="badge bg-success">Rapporterad</span> @saved.Comment</td>
+                        }
+                        else
+                        {
+                            var isEmpty = row.MachineStatus == MachineStatus.Empty;
+
+                            <td>
+                                <select class="form-select form-select-sm" @bind="row.ToolId" disabled="@isEmpty">
+                                    <option value="">Inget verktyg</option>
+                                    @foreach (var tool in options.Tools)
+                                    {
+                                        <option value="@tool.Id">@($"{tool.Number}{Location(tool, row.MachineId)}")</option>
+                                    }
+                                </select>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm" @bind="row.MachineStatus" @bind:after="() => OnMachineStatusChanged(row)">
+                                    <option value="">Välj...</option>
+                                    @foreach (var s in Enum.GetValues<MachineStatus>())
+                                    {
+                                        <option value="@s">@s.ToSwedish()</option>
+                                    }
+                                </select>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm" @bind="row.ToolStatus" @bind:after="() => OnToolStatusChanged(row)" disabled="@isEmpty">
+                                    <option value="">Välj...</option>
+                                    @foreach (var s in Enum.GetValues<ToolStatus>())
+                                    {
+                                        <option value="@s">@s.ToSwedish()</option>
+                                    }
+                                </select>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm" @bind="row.QualityStatus" disabled="@isEmpty">
+                                    <option value="">Välj...</option>
+                                    @foreach (var s in Enum.GetValues<QualityStatus>())
+                                    {
+                                        <option value="@s">@s.ToSwedish()</option>
+                                    }
+                                </select>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm" @bind="row.OperatorId">
+                                    <option value="">Välj...</option>
+                                    @foreach (var op in options.Operators)
+                                    {
+                                        <option value="@op.Id">@op.Name</option>
+                                    }
+                                </select>
+                            </td>
+                            <td>
+                                <input class="form-control form-control-sm" @bind="row.Comment" placeholder="Valfritt" />
+                            </td>
+                        }
+                    </tr>
+
+                    @if (row.Error is not null)
+                    {
+                        <tr class="row-error-message">
+                            <td colspan="7">@row.MachineName: @row.Error</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <button class="btn btn-primary" @onclick="SaveAsync" disabled="@saving">Spara skiftet</button>
+}
+
+@code {
+    private DateOnly date;
+    private Shift shift;
+    private FormOptions? options;
+    private List<MachineRowInput>? rows;
+    private string? message;
+    private bool messageIsError;
+    private bool saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        (date, shift) = WeekHelper.CurrentShift(DateTime.Now);
+        await LoadRowsAsync();
+    }
+
+    private async Task LoadRowsAsync()
+    {
+        message = null;
+        options = await Reports.GetFormOptionsAsync();
+        rows = await Reports.GetShiftRowsAsync(date, shift, options);
+    }
+
+    // Tom = no tool, so tool, tool status and quality are cleared
+    private void OnMachineStatusChanged(MachineRowInput row)
+    {
+        if (row.MachineStatus == MachineStatus.Empty)
+        {
+            row.ToolId = null;
+            row.ToolStatus = null;
+            row.QualityStatus = null;
+        }
+        else if (row.ToolId is null)
+        {
+            // Back from Tom: suggest the mounted tool again
+            row.ToolId = options?.Tools.FirstOrDefault(t => t.CurrentMachineId == row.MachineId)?.Id;
+        }
+    }
+
+    // A tool crash always means the machine is not okay
+    private void OnToolStatusChanged(MachineRowInput row)
+    {
+        if (row.ToolStatus == ToolStatus.Crash)
+            row.MachineStatus = MachineStatus.NotOk;
+    }
+
+    // Shows where a tool is, unless it is already in this machine
+    private static string Location(ToolOption tool, int machineId)
+    {
+        if (tool.CurrentMachineId == machineId)
+            return "";
+        return tool.CurrentMachineName is null ? " (verktygsrum)" : $" ({tool.CurrentMachineName})";
+    }
+
+    private async Task SaveAsync()
+    {
+        saving = true;
+        var result = await Reports.SaveShiftAsync(date, shift, rows!);
+        saving = false;
+
+        if (result.Success)
+        {
+            await LoadRowsAsync();
+            message = result.SavedCount == 1 ? "1 maskin sparad." : $"{result.SavedCount} maskiner sparade.";
+            messageIsError = false;
+        }
+        else
+        {
+            message = result.Error;
+            messageIsError = true;
+        }
+    }
+}

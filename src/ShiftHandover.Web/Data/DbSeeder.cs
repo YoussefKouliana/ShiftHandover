@@ -24,31 +24,25 @@ public static class DbSeeder
         db.Machines.AddRange(machines);
         Machine M(int number) => machines[number - 1];
 
-        // Tools, each making exactly one part
+                // Tools, identified only by number
         var tools = new List<Tool>();
-        Tool T(string number, string name, string partNumber, string partName)
+        Tool T(string number)
         {
-            var tool = new Tool
-            {
-                Number = number,
-                Name = name,
-                Part = new Part { Number = partNumber, Name = partName }
-            };
+            var tool = new Tool { Number = number };
             tools.Add(tool);
             return tool;
         }
 
-        var v1101 = T("V-1101", "Klippverktyg", "D-101", "Fäste vänster");
-        T("V-1102", "Klippverktyg", "D-102", "Fäste höger");
-        T("V-2201", "Bockverktyg", "D-205", "Täckplåt");
-        var v2202 = T("V-2202", "Stansverktyg", "D-310", "Konsol");
-        var v3301 = T("V-3301", "Följdverktyg", "D-412", "Distans");
-        var v4401 = T("V-4401", "Stansverktyg", "D-518", "Bricka");
-        var v5501 = T("V-5501", "Klippverktyg", "D-620", "Skyddsplåt");
-        var v6601 = T("V-6601", "Bockverktyg", "D-733", "Hållare");
-        T("V-6602", "Följdverktyg", "D-734", "Hållare förstärkt");
+        var v1101 = T("1101");
+        T("1102");
+        T("2201");
+        var v2202 = T("2202");
+        var v3301 = T("3301");
+        var v4401 = T("4401");
+        var v5501 = T("5501");
+        var v6601 = T("6601");
+        T("6602");
         db.Tools.AddRange(tools);
-
         // Operators (made-up names)
         var anna = new Operator { Name = "Anna Lindqvist" };
         var erik = new Operator { Name = "Erik Johansson" };

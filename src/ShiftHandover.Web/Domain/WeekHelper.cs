@@ -32,4 +32,19 @@ public static class WeekHelper
         var text = date.ToString("dddd d MMMM", Swedish);
         return char.ToUpper(text[0]) + text[1..];
     }
+
+    // 06-14 morning, 14-22 evening, 22-06 night.
+    // After midnight it is still the previous day's night shift.
+    public static (DateOnly Date, Shift Shift) CurrentShift(DateTime localNow)
+    {
+        var today = DateOnly.FromDateTime(localNow);
+
+        return localNow.Hour switch
+        {
+            < 6 => (today.AddDays(-1), Shift.Night),
+            < 14 => (today, Shift.Day),
+            < 22 => (today, Shift.Evening),
+            _ => (today, Shift.Night)
+        };
+    }
 }

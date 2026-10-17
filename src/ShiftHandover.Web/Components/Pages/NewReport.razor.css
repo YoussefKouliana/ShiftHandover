@@ -1,0 +1,27 @@
+.shift-picker {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.shift-picker > div {
+    min-width: 200px;
+}
+
+.report-table select,
+.report-table input {
+    min-width: 140px;
+}
+
+.row-error td {
+    background: #fff5f5;
+}
+
+.row-error-message td {
+    color: #842029;
+    background: #fff5f5;
+    font-size: 0.85rem;
+    border-top: none;
+    padding-top: 0;
+}
