@@ -32,4 +32,20 @@ public class WeekHelperTests
     {
         Assert.Equal("Måndag 12 oktober", WeekHelper.SwedishDayName(new DateOnly(2026, 10, 12)));
     }
+
+    [Theory]
+    [InlineData(6, 0, 16, Shift.Day)]
+    [InlineData(13, 59, 16, Shift.Day)]
+    [InlineData(14, 0, 16, Shift.Evening)]
+    [InlineData(22, 0, 16, Shift.Night)]
+    [InlineData(5, 59, 15, Shift.Night)] // after midnight: previous day's night shift
+    public void CurrentShift_follows_shift_hours(int hour, int minute, int expectedDay, Shift expectedShift)
+    {
+        var now = new DateTime(2026, 10, 16, hour, minute, 0);
+
+        var (date, shift) = WeekHelper.CurrentShift(now);
+
+        Assert.Equal(new DateOnly(2026, 10, expectedDay), date);
+        Assert.Equal(expectedShift, shift);
+    }
 }
