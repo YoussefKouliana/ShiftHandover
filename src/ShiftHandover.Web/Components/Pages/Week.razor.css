@@ -58,3 +58,8 @@
     font-size: 0.85rem;
     color: #495057;
 }
+
+.status.neutral {
+    background: #e9ecef;
+    color: #495057;
+}

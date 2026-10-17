@@ -87,24 +87,27 @@ public static class DbSeeder
             }
         }
 
+        // One example of each important situation
         db.ShiftReports.AddRange(
             ShiftReport.Create(lastWorkday, Shift.Day, M(1), v1101, anna,
-                MachineStatus.Running, ToolStatus.Worn, QualityStatus.CheckRequested,
-                "Grad vid klippkant, VM informerad.", DaysAgo(0.1)),
+                MachineStatus.ReadyToRun, ToolStatus.Worn, QualityStatus.NeedsQualityCheck,
+                "Grad vid klippkant, verktygsmakare informerad.", DaysAgo(0.1)),
             ShiftReport.Create(lastWorkday, Shift.Day, M(2), v2202, sara,
-                MachineStatus.Stopped, ToolStatus.Damaged, QualityStatus.Blocked,
-                "Sprucken stans, detaljerna spärrade.", DaysAgo(0.1)),
+                MachineStatus.NotOk, ToolStatus.Crash, QualityStatus.Blocked,
+                "Verktygskrasch, sprucken stans. Detaljerna spärrade.", DaysAgo(0.1)),
             ShiftReport.Create(lastWorkday, Shift.Day, M(3), v3301, mikael,
-                MachineStatus.Running, ToolStatus.Ok, QualityStatus.Approved, null, DaysAgo(0.1)),
-            ShiftReport.Create(lastWorkday, Shift.Day, M(4), v4401, anna,
-                MachineStatus.Service, ToolStatus.Ok, QualityStatus.Approved,
-                "Hydraulläckage, UH åtgärdar.", DaysAgo(0.1)),
+                MachineStatus.ReadyToRun, ToolStatus.GoodCondition, QualityStatus.Approved, null, DaysAgo(0.1)),
+            ShiftReport.Create(lastWorkday, Shift.Day, M(4), null, anna,
+                MachineStatus.Empty, null, null,
+                "Verktyget hos verktygsmakare.", DaysAgo(0.1)),
             ShiftReport.Create(lastWorkday, Shift.Day, M(5), v5501, erik,
-                MachineStatus.Running, ToolStatus.NeedsChange, QualityStatus.CheckRequested,
-                "Planera verktygsbyte till nästa skift.", DaysAgo(0.1)),
+                MachineStatus.HalfService, ToolStatus.WaitingForToolmaker, QualityStatus.MeasurementInProgress,
+                "Väntar på verktygsmakare efter halvservice.", DaysAgo(0.1)),
             ShiftReport.Create(lastWorkday, Shift.Day, M(6), v6601, sara,
-                MachineStatus.Running, ToolStatus.Ok, QualityStatus.Approved, null, DaysAgo(0.1)));
+                MachineStatus.ReadyToRun, ToolStatus.GoodCondition, QualityStatus.Approved, null, DaysAgo(0.1)));
 
+        // Maskin 4 is Tom, so its tool is back in the tool room
+        v4401.Unmount();
 
         // Issues
         var issues = new List<Issue>();
@@ -181,10 +184,11 @@ public static class DbSeeder
         db.Issues.AddRange(issues);
         await db.SaveChangesAsync();
     }
-    // Anything not normal gets one of these, so Spärrat always has a comment
+
+    // Comments for reports where something is not normal
     private static readonly string[] ProblemNotes =
     [
-        "Grad noterad, VM informerad.",
+        "Grad noterad, verktygsmakare informerad.",
         "Mätning nära toleransgränsen, kvalitet kontaktad.",
         "Kort stopp för justering.",
         "Extra kontroll genomförd.",
@@ -197,31 +201,38 @@ public static class DbSeeder
         // Mostly normal, sometimes a problem, like real production
         var toolStatus = rng.Next(100) switch
         {
-            < 75 => ToolStatus.Ok,
-            < 90 => ToolStatus.Worn,
-            < 97 => ToolStatus.NeedsChange,
-            _ => ToolStatus.Damaged
+            < 78 => ToolStatus.GoodCondition,
+            < 88 => ToolStatus.Worn,
+            < 93 => ToolStatus.ToolProblem,
+            < 96 => ToolStatus.WaitingForToolmaker,
+            < 98 => ToolStatus.ToolChangeInProgress,
+            _ => ToolStatus.Crash
         };
 
-        // Rule: a damaged tool always means the machine is stopped
-        var machineStatus = toolStatus == ToolStatus.Damaged
-            ? MachineStatus.Stopped
+        // Rule 1: a crash always means Ej okej
+        var machineStatus = toolStatus == ToolStatus.Crash
+            ? MachineStatus.NotOk
             : rng.Next(100) switch
             {
-                < 90 => MachineStatus.Running,
-                < 95 => MachineStatus.Stopped,
-                _ => MachineStatus.Service
+                < 85 => MachineStatus.ReadyToRun,
+                < 89 => MachineStatus.Test,
+                < 93 => MachineStatus.HalfService,
+                < 96 => MachineStatus.ServiceInProgress,
+                _ => MachineStatus.NotOk
             };
 
         var qualityStatus = rng.Next(100) switch
         {
-            < 85 => QualityStatus.Approved,
-            < 97 => QualityStatus.CheckRequested,
+            < 82 => QualityStatus.Approved,
+            < 90 => QualityStatus.NeedsQualityCheck,
+            < 95 => QualityStatus.MeasurementInProgress,
+            < 98 => QualityStatus.NotOk,
             _ => QualityStatus.Blocked
         };
 
-        var allNormal = toolStatus == ToolStatus.Ok
-            && machineStatus == MachineStatus.Running
+        // Rules 2 and 5: anything not normal gets a comment
+        var allNormal = toolStatus == ToolStatus.GoodCondition
+            && machineStatus == MachineStatus.ReadyToRun
             && qualityStatus == QualityStatus.Approved;
         var comment = allNormal ? null : ProblemNotes[rng.Next(ProblemNotes.Length)];
 

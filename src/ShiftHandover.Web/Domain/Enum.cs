@@ -36,22 +36,29 @@ public enum Shift
 
 public enum MachineStatus
 {
-    Running,
-    Stopped,
-    Service
+    ReadyToRun,
+    NotOk,
+    Empty,
+    HalfService,
+    ServiceInProgress,
+    Test
 }
 
 public enum ToolStatus
 {
-    Ok,
+    GoodCondition,
+    Crash,
+    ToolProblem,
+    WaitingForToolmaker,
     Worn,
-    Damaged,
-    NeedsChange
+    ToolChangeInProgress
 }
 
 public enum QualityStatus
 {
     Approved,
-    CheckRequested,
+    NotOk,
+    MeasurementInProgress,
+    NeedsQualityCheck,
     Blocked
 }

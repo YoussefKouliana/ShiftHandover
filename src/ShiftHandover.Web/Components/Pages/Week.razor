@@ -54,10 +54,29 @@ else
                                     else
                                     {
                                         <td>@row.ToolText</td>
-                                        <td>@row.PartText</td>
+                                                                           <td>@(row.ToolText ?? "Inget verktyg")</td>
+                                        <td>@(row.PartText ?? "-")</td>
                                         <td><span class="status @MachineClass(row.MachineStatus)">@row.MachineStatus.ToSwedish()</span></td>
-                                        <td><span class="status @ToolClass(row.ToolStatus)">@row.ToolStatus.ToSwedish()</span></td>
-                                        <td><span class="status @QualityClass(row.QualityStatus)">@row.QualityStatus.ToSwedish()</span></td>
+                                        <td>
+                                            @if (row.ToolStatus is { } toolStatus)
+                                            {
+                                                <span class="status @ToolClass(toolStatus)">@toolStatus.ToSwedish()</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (row.QualityStatus is { } qualityStatus)
+                                            {
+                                                <span class="status @QualityClass(qualityStatus)">@qualityStatus.ToSwedish()</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
                                         <td>@row.OperatorName</td>
                                         <td class="comment">@row.Comment</td>
                                     }
@@ -107,24 +126,26 @@ else
         rows!.FirstOrDefault(r => r.Date == day && r.Shift == shift && r.MachineId == machineId);
 
     // Green = ok, yellow = keep an eye on it, red = problem
+       // Green = ok, yellow = keep an eye on it, red = problem, grey = not in use
     private static string MachineClass(MachineStatus status) => status switch
     {
-        MachineStatus.Running => "ok",
-        MachineStatus.Service => "warn",
-        _ => "bad"
+        MachineStatus.ReadyToRun => "ok",
+        MachineStatus.NotOk => "bad",
+        MachineStatus.Empty => "neutral",
+        _ => "warn"
     };
 
     private static string ToolClass(ToolStatus status) => status switch
     {
-        ToolStatus.Ok => "ok",
-        ToolStatus.Damaged => "bad",
+        ToolStatus.GoodCondition => "ok",
+        ToolStatus.Crash => "bad",
         _ => "warn"
     };
 
     private static string QualityClass(QualityStatus status) => status switch
     {
         QualityStatus.Approved => "ok",
-        QualityStatus.Blocked => "bad",
+        QualityStatus.NotOk or QualityStatus.Blocked => "bad",
         _ => "warn"
     };
 }

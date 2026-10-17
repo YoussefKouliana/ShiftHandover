@@ -43,26 +43,33 @@ public static class SwedishLabels
 
     public static string ToSwedish(this MachineStatus status) => status switch
     {
-        MachineStatus.Running => "Kör",
-        MachineStatus.Stopped => "Stoppad",
-        MachineStatus.Service => "Service",
+        MachineStatus.ReadyToRun => "Okej att köra",
+        MachineStatus.NotOk => "Ej okej",
+        MachineStatus.Empty => "Tom",
+        MachineStatus.HalfService => "Halvservice",
+        MachineStatus.ServiceInProgress => "Service pågår",
+        MachineStatus.Test => "Test",
         _ => status.ToString()
     };
 
     public static string ToSwedish(this ToolStatus status) => status switch
     {
-        ToolStatus.Ok => "OK",
+        ToolStatus.GoodCondition => "Bra skick",
+        ToolStatus.Crash => "Krasch",
+        ToolStatus.ToolProblem => "Verktygsproblem",
+        ToolStatus.WaitingForToolmaker => "Väntar på verktygsmakare",
         ToolStatus.Worn => "Slitage",
-        ToolStatus.Damaged => "Skadat",
-        ToolStatus.NeedsChange => "Byte behövs",
+        ToolStatus.ToolChangeInProgress => "Verktygsbyte pågår",
         _ => status.ToString()
     };
 
     public static string ToSwedish(this QualityStatus status) => status switch
     {
-        QualityStatus.Approved => "Godkänt",
-        QualityStatus.CheckRequested => "Kontroll begärd",
-        QualityStatus.Blocked => "Spärrat",
+        QualityStatus.Approved => "Godkänd",
+        QualityStatus.NotOk => "Ej okej",
+        QualityStatus.MeasurementInProgress => "Mätning pågår",
+        QualityStatus.NeedsQualityCheck => "Behöver kvalitetskontroll",
+        QualityStatus.Blocked => "Spärrad",
         _ => status.ToString()
     };
 }

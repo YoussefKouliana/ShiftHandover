@@ -57,12 +57,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             b.Property(s => s.Comment).HasMaxLength(500);
         });
 
-                modelBuilder.Entity<Part>(b =>
-        {
-            b.Property(p => p.Number).HasMaxLength(30).IsRequired();
-            b.Property(p => p.Name).HasMaxLength(100).IsRequired();
-            b.HasIndex(p => p.Number).IsUnique();
-        });
+        modelBuilder.Entity<Part>(b =>
+{
+    b.Property(p => p.Number).HasMaxLength(30).IsRequired();
+    b.Property(p => p.Name).HasMaxLength(100).IsRequired();
+    b.HasIndex(p => p.Number).IsUnique();
+});
 
         modelBuilder.Entity<Tool>(b =>
         {
@@ -95,7 +95,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             b.Property(r => r.Comment).HasMaxLength(1000);
 
             b.HasOne(r => r.Machine).WithMany().HasForeignKey(r => r.MachineId).OnDelete(DeleteBehavior.Restrict);
-            b.HasOne(r => r.Tool).WithMany().HasForeignKey(r => r.ToolId).OnDelete(DeleteBehavior.Restrict);
+            // Optional: a Tom machine has no tool
+            b.HasOne(r => r.Tool).WithMany().HasForeignKey(r => r.ToolId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             b.HasOne(r => r.Operator).WithMany().HasForeignKey(r => r.OperatorId).OnDelete(DeleteBehavior.Restrict);
 
             // Only one report per machine, date and shift

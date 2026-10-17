@@ -179,7 +179,6 @@ namespace ShiftHandover.Web.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("QualityStatus")
-                        .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
@@ -188,11 +187,10 @@ namespace ShiftHandover.Web.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<int>("ToolId")
+                    b.Property<int?>("ToolId")
                         .HasColumnType("int");
 
                     b.Property<string>("ToolStatus")
-                        .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
@@ -313,8 +311,7 @@ namespace ShiftHandover.Web.Migrations
                     b.HasOne("ShiftHandover.Web.Domain.Tool", "Tool")
                         .WithMany()
                         .HasForeignKey("ToolId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Machine");
 
