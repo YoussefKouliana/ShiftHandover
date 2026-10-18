@@ -9,7 +9,7 @@ A digital shift handover tool for manufacturing, built with Blazor and .NET 9. O
 
 ## Why I built it
 
-I have worked as a machine operator in production since 2019. Shift handovers are often written as free text, so problems get reported, handed to another team ("ask the toolmaker to check"), and then forgotten. Statuses are inconsistent and nobody can see at a glance which issues are still open.
+I have worked as a machine operator in production since 2020. Shift handovers are often written as free text, so problems get reported, handed to another team ("ask the toolmaker to check"), and then forgotten. Statuses are inconsistent and nobody can see at a glance which issues are still open.
 
 This app replaces free text with structured reports and turns every reported problem into a tracked issue.
 
